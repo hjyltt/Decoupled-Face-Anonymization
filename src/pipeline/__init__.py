@@ -1,5 +1,5 @@
 """Pipeline building blocks for face anonymization experiments."""
 
-from .base_pipeline import BaseAnonymizationPipeline
+from .base_pipeline import BaseAnonymizationPipeline, PipelineOutput
 
-__all__ = ["BaseAnonymizationPipeline"]
+__all__ = ["BaseAnonymizationPipeline", "PipelineOutput"]

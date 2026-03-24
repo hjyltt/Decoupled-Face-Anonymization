@@ -3,6 +3,7 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from pathlib import Path
 from typing import Literal, Sequence
+import os
 
 import numpy as np
 
@@ -262,7 +263,7 @@ class InsightFaceClient:
         if self.config.allowed_modules is not None:
             constructor_kwargs["allowed_modules"] = list(self.config.allowed_modules)
 
-        app = self._build_face_analysis_with_fallbacks(constructor_kwargs)
+        app = self._build_face_analysis_with_root_fallback(constructor_kwargs)
 
         try:
             app.prepare(
@@ -276,6 +277,22 @@ class InsightFaceClient:
                 det_size=self.config.det_size,
             )
         return app
+
+    def _build_face_analysis_with_root_fallback(
+        self,
+        constructor_kwargs: dict[str, object],
+    ) -> FaceAnalysis:
+        try:
+            return self._build_face_analysis_with_fallbacks(constructor_kwargs)
+        except PermissionError:
+            if self.config.root is not None:
+                raise
+
+            fallback_root = self._default_local_model_root()
+            fallback_root.mkdir(parents=True, exist_ok=True)
+            fallback_kwargs = dict(constructor_kwargs)
+            fallback_kwargs["root"] = str(fallback_root)
+            return self._build_face_analysis_with_fallbacks(fallback_kwargs)
 
     def _build_face_analysis_with_fallbacks(
         self,
@@ -326,6 +343,10 @@ class InsightFaceClient:
     @staticmethod
     def face_to_bbox(face: FaceInfo) -> BoundingBox:
         return face.bbox
+
+    @staticmethod
+    def _default_local_model_root() -> Path:
+        return Path(os.getcwd()) / ".insightface"
 
     @staticmethod
     def _require_runtime_dependencies() -> None:
